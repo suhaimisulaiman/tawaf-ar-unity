@@ -30,8 +30,9 @@ public class KaabaTest : MonoBehaviour
     
     [Header("Round Counting")]
     public float hajarAswadThreshold = 5f; // Much smaller threshold (5° instead of 30°)
-    public float roundCompletionThreshold = 350f; // Require 350° of movement for a round
+    public float roundCompletionThreshold = 360f; // Require full 360° of movement for a round
     public bool requireFullRotation = true; // Require full 360° rotation
+    public bool mustStartFromHajarAswad = true; // Rounds must start from Hajar al-Aswad
     
     private Vector3 lastPosition;
     private float lastAngle = 0f;
@@ -216,7 +217,7 @@ public class KaabaTest : MonoBehaviour
             }
         }
         
-        // Manual Kaaba creation with touch
+        // Manual Kaaba creation with touch (only for initial setup)
         if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
             Debug.Log("Touch detected - attempting to create Kaaba");
@@ -232,20 +233,8 @@ public class KaabaTest : MonoBehaviour
             }
             else
             {
-                // Test prayer system manually
-                Debug.Log("Testing prayer system manually...");
-                if (enablePrayers && prayerRecitation != null)
-                {
-                    prayerRecitation.PlayRoundCompletionPrayer(1);
-                }
-                else
-                {
-                    Debug.Log("Prayer system not available for manual test");
-                }
-                
-                // Also test round completion manually
-                Debug.Log("Manually completing round for testing...");
-                CompleteRound();
+                // No manual testing - everything should work automatically
+                Debug.Log("Tap detected but no manual actions needed - system works automatically");
             }
         }
     }
@@ -289,11 +278,14 @@ public class KaabaTest : MonoBehaviour
                 }
             }
             
-            // Check if passed Hajar al-Aswad (0 degrees)
-            CheckHajarAswadPass();
-            
-            // Check if completed a full round
-            CheckRoundCompletion();
+                    // Check if passed Hajar al-Aswad (0 degrees)
+        CheckHajarAswadPass();
+        
+        // Check if completed a full round
+        CheckRoundCompletion();
+        
+        // Rounds must complete through exactly 360° of movement from Hajar al-Aswad
+        // No shortcuts or alternative completion methods
             
             lastAngle = currentAngle;
         }
@@ -356,13 +348,22 @@ public class KaabaTest : MonoBehaviour
         // Normalize angle to 0-360
         if (currentAngle < 0) currentAngle += 360f;
         
-        // Start a new round when we pass Hajar al-Aswad
-        if (hajarAswadPasses > 0 && !roundInProgress)
+        // Start tracking rotation ONLY when we first pass Hajar al-Aswad (0°)
+        if (hajarAswadPasses == 1 && !roundInProgress && mustStartFromHajarAswad)
         {
-            roundInProgress = true;
-            roundStartAngle = currentAngle;
-            totalRotationThisRound = 0f;
-            Debug.Log($"Starting new round at angle: {currentAngle:F1}°");
+            // Verify we're actually near Hajar al-Aswad (0°) when starting
+            bool nearHajarAswad = Mathf.Abs(Mathf.DeltaAngle(currentAngle, 0f)) < hajarAswadThreshold;
+            if (nearHajarAswad)
+            {
+                roundInProgress = true;
+                roundStartAngle = currentAngle;
+                totalRotationThisRound = 0f;
+                Debug.Log($"Starting new round from Hajar al-Aswad at angle: {currentAngle:F1}°");
+            }
+            else
+            {
+                Debug.Log($"Cannot start round - not at Hajar al-Aswad. Current angle: {currentAngle:F1}°");
+            }
         }
         
         // Track rotation during the round
@@ -374,10 +375,10 @@ public class KaabaTest : MonoBehaviour
                 totalRotationThisRound += Mathf.Abs(angleDifference);
             }
             
-            // Check if we've completed enough rotation for a round
+            // Check if we've completed exactly 360° for a round
             if (totalRotationThisRound >= roundCompletionThreshold)
             {
-                Debug.Log($"Round completed! Total rotation: {totalRotationThisRound:F1}°");
+                Debug.Log($"Round completed! Total rotation: {totalRotationThisRound:F1}° (360° required)");
                 CompleteRound();
                 
                 // Reset for next round
@@ -392,6 +393,10 @@ public class KaabaTest : MonoBehaviour
         if (Time.frameCount % 60 == 0 && roundInProgress)
         {
             Debug.Log($"Round Progress - Rotation: {totalRotationThisRound:F1}°/{roundCompletionThreshold}°, Angle: {currentAngle:F1}°");
+        }
+        else if (Time.frameCount % 60 == 0)
+        {
+            Debug.Log($"Round Status - In Progress: {roundInProgress}, Passes: {hajarAswadPasses}, Rotation: {totalRotationThisRound:F1}°");
         }
     }
     
@@ -459,7 +464,20 @@ public class KaabaTest : MonoBehaviour
             if (roundInProgress)
             {
                 GUI.color = Color.yellow;
-                GUI.Label(new Rect(20, y, 400, lineHeight), $"Round Progress: {totalRotationThisRound:F1}°/{roundCompletionThreshold}°");
+                GUI.Label(new Rect(20, y, 400, lineHeight), $"Round Progress: {totalRotationThisRound:F1}°/360°");
+                y += lineHeight;
+            }
+            
+            // Show round status debug info
+            GUI.color = Color.orange;
+            GUI.Label(new Rect(20, y, 400, lineHeight), $"Round In Progress: {roundInProgress}");
+            y += lineHeight;
+            
+            // Show if round started from Hajar al-Aswad
+            if (roundInProgress)
+            {
+                GUI.color = Color.green;
+                GUI.Label(new Rect(20, y, 400, lineHeight), "Round started from Hajar al-Aswad ✓");
                 y += lineHeight;
             }
             
@@ -492,7 +510,7 @@ public class KaabaTest : MonoBehaviour
         }
         else
         {
-            GUI.Label(new Rect(20, y, 400, lineHeight), "Tap to test prayer system");
+            GUI.Label(new Rect(20, y, 400, lineHeight), "System works automatically - just walk around!");
         }
         y += lineHeight;
         
