@@ -23,7 +23,6 @@ public class ARMovementTracker : MonoBehaviour
     public int totalRounds = 7;
     
     private GameObject kaabaInstance;
-    private ARAnchor kaabaAnchor;
     private Vector3 playerPosition;
     private float lastAngle = 0f;
     private float totalAngleChange = 0f;
@@ -69,22 +68,8 @@ public class ARMovementTracker : MonoBehaviour
         Renderer renderer = kaabaInstance.GetComponent<Renderer>();
         renderer.material.color = Color.black;
         
-        // Create AR anchor for the Kaaba
-        CreateKaabaAnchor();
-        
         kaabaPlaced = true;
-        Debug.Log("AR Kaaba created and anchored!");
-    }
-    
-    void CreateKaabaAnchor()
-    {
-        // Create an AR anchor at the Kaaba position
-        if (arSessionOrigin != null)
-        {
-            kaabaAnchor = arSessionOrigin.trackablesParent.gameObject.AddComponent<ARAnchor>();
-            kaabaAnchor.transform.position = kaabaInstance.transform.position;
-            kaabaInstance.transform.SetParent(kaabaAnchor.transform);
-        }
+        Debug.Log("AR Kaaba created!");
     }
     
     void Update()

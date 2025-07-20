@@ -6,7 +6,7 @@ public class KaabaTest : MonoBehaviour
     [Header("Testing Mode")]
     public bool enableTesting = true;
     public bool showDebugUI = true;
-    public bool debugMode = true; // Easier testing
+    public bool debugMode = false; // Clean experience
     
     [Header("Prayer Integration")]
     public bool enablePrayers = true;
@@ -40,7 +40,6 @@ public class KaabaTest : MonoBehaviour
     {
         if (enableTesting)
         {
-            Debug.Log("KaabaTest: Starting in testing mode...");
             CreateKaaba();
         }
         
@@ -50,18 +49,9 @@ public class KaabaTest : MonoBehaviour
             prayerRecitation = FindFirstObjectByType<PrayerRecitation>();
             if (prayerRecitation == null)
             {
-                Debug.Log("Creating PrayerRecitation component...");
                 GameObject prayerObj = new GameObject("PrayerRecitation");
                 prayerRecitation = prayerObj.AddComponent<PrayerRecitation>();
             }
-            else
-            {
-                Debug.Log("Found existing PrayerRecitation component");
-            }
-        }
-        else
-        {
-            Debug.Log("Prayers disabled in KaabaTest");
         }
         
         // Find corner marker system
@@ -70,28 +60,17 @@ public class KaabaTest : MonoBehaviour
             cornerMarker = FindFirstObjectByType<CornerMarker>();
             if (cornerMarker == null)
             {
-                Debug.Log("Creating CornerMarker component...");
                 GameObject markerObj = new GameObject("CornerMarker");
                 cornerMarker = markerObj.AddComponent<CornerMarker>();
             }
-            else
-            {
-                Debug.Log("Found existing CornerMarker component");
-            }
-        }
-        else
-        {
-            Debug.Log("Corner markers disabled in KaabaTest");
         }
         
         // Try to create Kaaba automatically if in testing mode
         if (enableTesting && !kaabaCreated)
         {
-            Debug.Log("Testing mode enabled - creating Kaaba automatically...");
             CreateKaaba();
             if (!kaabaCreated)
             {
-                Debug.Log("Automatic creation failed, trying fallback...");
                 CreateSimpleKaaba();
             }
         }
@@ -105,11 +84,8 @@ public class KaabaTest : MonoBehaviour
         {
             kaabaInstance = existingKaaba;
             kaabaCreated = true;
-            Debug.Log("Found existing Kaaba!");
             return;
         }
-        
-        Debug.Log("Creating new Kaaba...");
         
         try
         {
@@ -176,59 +152,33 @@ public class KaabaTest : MonoBehaviour
             }
         }
         
-        Debug.Log("Kaaba created with black material");
-        
         kaabaCreated = true;
         lastPosition = Camera.main.transform.position;
-        
-        Debug.Log("Kaaba created successfully at: " + kaabaInstance.transform.position);
-        Debug.Log("kaabaCreated flag set to: " + kaabaCreated);
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error creating Kaaba: {e.Message}");
             kaabaCreated = false;
         }
     }
     
     void Update()
     {
-        // Debug: Log status every 60 frames
-        if (Time.frameCount % 60 == 0)
-        {
-            Debug.Log($"KaabaTest Update - kaabaCreated: {kaabaCreated}, kaabaInstance: {(kaabaInstance != null ? "exists" : "null")}, enableTesting: {enableTesting}");
-        }
-        
         if (enableTesting && kaabaCreated && kaabaInstance != null)
         {
             TrackMovement();
-        }
-        else
-        {
-            if (Time.frameCount % 60 == 0)
-            {
-                Debug.Log($"Not tracking - enableTesting: {enableTesting}, kaabaCreated: {kaabaCreated}, kaabaInstance: {(kaabaInstance != null ? "exists" : "null")}");
-            }
         }
         
         // Manual Kaaba creation with touch (only for initial setup)
         if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
-            Debug.Log("Touch detected - attempting to create Kaaba");
             if (!kaabaCreated)
             {
                 CreateKaaba();
                 // If main creation failed, try fallback
                 if (!kaabaCreated)
                 {
-                    Debug.Log("Main Kaaba creation failed, trying fallback method...");
                     CreateSimpleKaaba();
                 }
-            }
-            else
-            {
-                // No manual testing - everything should work automatically
-                Debug.Log("Tap detected but no manual actions needed - system works automatically");
             }
         }
     }
@@ -244,11 +194,7 @@ public class KaabaTest : MonoBehaviour
         // Check if in valid range
         isValidDistance = (distanceToKaaba >= minimumDistance && distanceToKaaba <= maximumDistance);
         
-        // Debug: Log distance and validity
-        if (Time.frameCount % 60 == 0)
-        {
-            Debug.Log($"Distance: {distanceToKaaba:F1}m, Valid: {isValidDistance}, Min: {minimumDistance}, Max: {maximumDistance}");
-        }
+
         
         if (isValidDistance)
         {
@@ -265,11 +211,7 @@ public class KaabaTest : MonoBehaviour
             {
                 totalAngleChange += angleDifference;
                 
-                // Debug logging
-                if (debugMode && Time.frameCount % 30 == 0) // Log every 30 frames
-                {
-                    Debug.Log($"Angle: {currentAngle:F1}°, Change: {angleDifference:F1}°, Total: {totalAngleChange:F1}°");
-                }
+
             }
             
                     // Check if passed Hajar al-Aswad (0 degrees)
@@ -279,7 +221,6 @@ public class KaabaTest : MonoBehaviour
         if (hajarAswadPasses > 0 && !hasPassedHajarAswad)
         {
             // Complete round when we pass Hajar al-Aswad
-            Debug.Log($"Round completed! Hajar al-Aswad passes: {hajarAswadPasses}");
             CompleteRound();
             
             // Reset for next round
@@ -293,10 +234,6 @@ public class KaabaTest : MonoBehaviour
         {
             // Reset angle tracking if out of range
             lastAngle = 0f;
-            if (Time.frameCount % 60 == 0)
-            {
-                Debug.Log("Out of valid range - resetting angle tracking");
-            }
         }
         
         lastPosition = currentPosition;
@@ -323,7 +260,6 @@ public class KaabaTest : MonoBehaviour
         {
             hasPassedHajarAswad = true;
             hajarAswadPasses++;
-            Debug.Log($"Passed Hajar al-Aswad! Current angle: {currentAngle:F1}°, Passes: {hajarAswadPasses}");
         }
         // If we've moved away from Hajar al-Aswad, reset the flag
         else if (!nearHajarAswad && hasPassedHajarAswad)
@@ -331,11 +267,7 @@ public class KaabaTest : MonoBehaviour
             hasPassedHajarAswad = false;
         }
         
-        // Debug logging
-        if (Time.frameCount % 60 == 0)
-        {
-            Debug.Log($"Hajar al-Aswad Check - Angle: {currentAngle:F1}°, Near: {nearHajarAswad}, Passes: {hajarAswadPasses}");
-        }
+
     }
     
     // Removed complex CheckRoundCompletion method - using simple Hajar al-Aswad pass counting instead
@@ -343,7 +275,6 @@ public class KaabaTest : MonoBehaviour
     void CompleteRound()
     {
         currentRound++;
-        Debug.Log($"Round {currentRound} completed! Distance: {distanceToKaaba:F1}m");
         
         // Play round completion prayer
         if (enablePrayers && prayerRecitation != null)
@@ -353,8 +284,6 @@ public class KaabaTest : MonoBehaviour
         
         if (currentRound >= 7)
         {
-            Debug.Log("🎉 TAWAF COMPLETED! All 7 rounds finished!");
-            
             // Play Tawaf completion prayer
             if (enablePrayers && prayerRecitation != null)
             {
@@ -370,53 +299,90 @@ public class KaabaTest : MonoBehaviour
     {
         if (!showDebugUI) return;
         
-        // Clean, professional UI
-        GUI.skin.label.fontSize = 18;
+        // Modern AR App UI Design
+        int y = 40;
+        int lineHeight = 30;
+        int padding = 20;
+        int cornerRadius = 15;
         
-        int y = 20;
-        int lineHeight = 25;
+        // Main title with modern styling
+        GUI.skin.label.fontSize = 28;
+        GUI.skin.label.fontStyle = FontStyle.Bold;
         
-        // Main title
-        GUI.color = new Color(0.2f, 0.6f, 1f); // Blue
-        GUI.Label(new Rect(20, y, 400, lineHeight), "🕌 Tawaf AR Trainer");
-        y += lineHeight + 10;
+        // Title background with gradient effect
+        GUI.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
+        GUI.Box(new Rect(padding - 10, y - 10, 400, 50), "");
+        
+        // Title text with glow effect
+        GUI.color = new Color(0.2f, 0.8f, 1f); // Cyan blue
+        GUI.Label(new Rect(padding, y, 400, lineHeight), "🕌 Tawaf AR Trainer");
+        y += lineHeight + 20;
         
         if (kaabaCreated)
         {
-            // Round counter - main focus
+            // Round counter with modern card design
+            GUI.skin.label.fontSize = 36;
+            GUI.skin.label.fontStyle = FontStyle.Bold;
+            
+            // Card background with shadow
+            GUI.color = new Color(0.15f, 0.15f, 0.15f, 0.95f);
+            GUI.Box(new Rect(padding - 15, y - 15, 350, 80), "");
+            
+            // Round counter text
             GUI.color = Color.white;
-            GUI.skin.label.fontSize = 24;
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Round {currentRound}/7");
-            y += lineHeight + 5;
+            GUI.Label(new Rect(padding, y, 350, 40), $"Round {currentRound}/7");
+            y += 50;
             
-            // Progress bar background
-            GUI.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
-            GUI.Box(new Rect(20, y, 300, 15), "");
-            
-            // Progress bar fill
-            float progress = (float)currentRound / 7f;
-            GUI.color = new Color(0.2f, 0.8f, 0.2f, 0.9f); // Green
-            GUI.Box(new Rect(20, y, 300 * progress, 15), "");
-            
-            y += lineHeight + 10;
-            
-            // Status indicators
+            // Modern progress bar
             GUI.skin.label.fontSize = 16;
             
-            // Distance indicator
-            GUI.color = isValidDistance ? new Color(0.2f, 0.8f, 0.2f) : new Color(0.8f, 0.2f, 0.2f);
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Distance: {distanceToKaaba:F1}m");
-            y += lineHeight;
+            // Progress bar container
+            GUI.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+            GUI.Box(new Rect(padding, y, 320, 20), "");
             
-            // Current corner
+            // Progress bar fill with gradient
+            float progress = (float)currentRound / 7f;
+            Color progressColor = Color.Lerp(new Color(0.2f, 0.8f, 0.2f), new Color(0.1f, 0.9f, 0.3f), progress);
+            GUI.color = progressColor;
+            GUI.Box(new Rect(padding, y, 320 * progress, 20), "");
+            
+            // Progress percentage
+            GUI.color = Color.white;
+            GUI.Label(new Rect(padding + 330, y, 50, 20), $"{(progress * 100):F0}%");
+            y += 40;
+            
+            // Status cards
+            GUI.skin.label.fontSize = 18;
+            
+            // Distance card
+            GUI.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
+            GUI.Box(new Rect(padding - 10, y - 10, 380, 50), "");
+            
+            GUI.color = isValidDistance ? new Color(0.2f, 0.9f, 0.2f) : new Color(0.9f, 0.3f, 0.3f);
+            GUI.Label(new Rect(padding, y, 380, 30), $"📏 Distance: {distanceToKaaba:F1}m");
+            
+            GUI.color = new Color(0.7f, 0.7f, 0.7f);
+            GUI.skin.label.fontSize = 14;
+            GUI.Label(new Rect(padding, y + 25, 380, 20), isValidDistance ? "✅ Optimal range" : "⚠️ Move closer or further");
+            y += 60;
+            
+            // Current corner indicator
             if (enableCornerMarkers && cornerMarker != null && cornerMarker.IsNearCorner())
             {
+                GUI.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
+                GUI.Box(new Rect(padding - 10, y - 10, 380, 50), "");
+                
                 GUI.color = new Color(1f, 0.8f, 0.2f); // Gold
-                GUI.Label(new Rect(20, y, 400, lineHeight), $"📍 {cornerMarker.GetCurrentCornerName()}");
-                y += lineHeight;
+                GUI.skin.label.fontSize = 18;
+                GUI.Label(new Rect(padding, y, 380, 30), $"📍 {cornerMarker.GetCurrentCornerName()}");
+                
+                GUI.color = new Color(0.7f, 0.7f, 0.7f);
+                GUI.skin.label.fontSize = 14;
+                GUI.Label(new Rect(padding, y + 25, 380, 20), "Approaching corner");
+                y += 60;
             }
             
-            // Near Hajar al-Aswad indicator
+            // Hajar al-Aswad indicator
             Vector3 toKaaba = kaabaInstance.transform.position - Camera.main.transform.position;
             Vector2 flatDirection = new Vector2(toKaaba.x, toKaaba.z);
             float currentAngle = Mathf.Atan2(flatDirection.y, flatDirection.x) * Mathf.Rad2Deg;
@@ -425,52 +391,80 @@ public class KaabaTest : MonoBehaviour
             
             if (nearHajarAswad)
             {
-                GUI.color = new Color(0.8f, 0.2f, 0.2f); // Red for Hajar al-Aswad
-                GUI.Label(new Rect(20, y, 400, lineHeight), "🖤 Hajar al-Aswad");
-                y += lineHeight;
+                GUI.color = new Color(0.15f, 0.05f, 0.05f, 0.95f);
+                GUI.Box(new Rect(padding - 10, y - 10, 380, 50), "");
+                
+                GUI.color = new Color(0.9f, 0.2f, 0.2f); // Red for Hajar al-Aswad
+                GUI.skin.label.fontSize = 18;
+                GUI.Label(new Rect(padding, y, 380, 30), "🖤 Hajar al-Aswad");
+                
+                GUI.color = new Color(0.8f, 0.8f, 0.8f);
+                GUI.skin.label.fontSize = 14;
+                GUI.Label(new Rect(padding, y + 25, 380, 20), "Black Stone - Complete your round");
+                y += 60;
             }
         }
         else
         {
-            // Setup instructions
-            GUI.color = Color.white;
-            GUI.Label(new Rect(20, y, 400, lineHeight), "Tap to create Kaaba");
-            y += lineHeight;
-            
-            GUI.color = new Color(0.7f, 0.7f, 0.7f);
-            GUI.Label(new Rect(20, y, 400, lineHeight), "Point camera at floor, then tap screen");
-        }
-        
-        // Bottom instructions
-        y = Screen.height - 80;
-        GUI.color = new Color(0.6f, 0.6f, 0.6f, 0.8f);
-        GUI.skin.label.fontSize = 14;
-        GUI.Label(new Rect(20, y, 400, lineHeight), "Walk around the Kaaba in circles");
-        y += lineHeight;
-        GUI.Label(new Rect(20, y, 400, lineHeight), "Keep 0.5-3m distance for best tracking");
-        
-        // Tawaf completion celebration
-        if (currentRound >= 7)
-        {
-            // Semi-transparent overlay
-            GUI.color = new Color(0, 0, 0, 0.7f);
-            GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "");
-            
-            // Celebration text
-            GUI.color = new Color(1f, 0.8f, 0.2f); // Gold
-            GUI.skin.label.fontSize = 32;
-            GUI.skin.label.alignment = TextAnchor.MiddleCenter;
-            GUI.Label(new Rect(0, Screen.height/2 - 100, Screen.width, 50), "🎉 TAWAF COMPLETED! 🎉");
+            // Setup instructions with modern design
+            GUI.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
+            GUI.Box(new Rect(padding - 10, y - 10, 380, 80), "");
             
             GUI.color = Color.white;
             GUI.skin.label.fontSize = 20;
-            GUI.Label(new Rect(0, Screen.height/2 - 50, Screen.width, 30), "All 7 rounds finished successfully");
+            GUI.Label(new Rect(padding, y, 380, 30), "🎯 Setup Required");
             
             GUI.color = new Color(0.8f, 0.8f, 0.8f);
             GUI.skin.label.fontSize = 16;
-            GUI.Label(new Rect(0, Screen.height/2, Screen.width, 25), "May Allah accept your Tawaf");
+            GUI.Label(new Rect(padding, y + 35, 380, 25), "Tap screen to create Kaaba");
+            GUI.Label(new Rect(padding, y + 55, 380, 25), "Point camera at floor, then tap");
         }
-    }
+        
+        // Bottom instructions with modern styling
+        y = Screen.height - 120;
+        GUI.color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+        GUI.Box(new Rect(0, y - 20, Screen.width, 100), "");
+        
+        GUI.color = new Color(0.8f, 0.8f, 0.8f);
+        GUI.skin.label.fontSize = 16;
+        GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+        GUI.Label(new Rect(0, y, Screen.width, 25), "🔄 Walk around the Kaaba in circles");
+        GUI.Label(new Rect(0, y + 25, Screen.width, 25), "📏 Keep 0.5-3m distance for best tracking");
+        GUI.Label(new Rect(0, y + 50, Screen.width, 25), "🎯 Complete 7 rounds to finish Tawaf");
+        
+        // Tawaf completion celebration with modern overlay
+        if (currentRound >= 7)
+        {
+            // Semi-transparent overlay with blur effect
+            GUI.color = new Color(0, 0, 0, 0.85f);
+            GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "");
+            
+            // Celebration card
+            GUI.color = new Color(0.1f, 0.1f, 0.1f, 0.95f);
+            GUI.Box(new Rect(Screen.width/2 - 200, Screen.height/2 - 150, 400, 300), "");
+            
+            // Celebration text with modern typography
+            GUI.color = new Color(1f, 0.8f, 0.2f); // Gold
+            GUI.skin.label.fontSize = 36;
+            GUI.skin.label.fontStyle = FontStyle.Bold;
+            GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+            GUI.Label(new Rect(Screen.width/2 - 200, Screen.height/2 - 120, 400, 50), "🎉 TAWAF COMPLETED! 🎉");
+            
+            GUI.color = Color.white;
+            GUI.skin.label.fontSize = 20;
+            GUI.Label(new Rect(Screen.width/2 - 200, Screen.height/2 - 70, 400, 30), "All 7 rounds finished successfully");
+            
+            GUI.color = new Color(0.8f, 0.8f, 0.8f);
+            GUI.skin.label.fontSize = 16;
+            GUI.Label(new Rect(Screen.width/2 - 200, Screen.height/2 - 30, 400, 25), "May Allah accept your Tawaf");
+            
+            // Completion stats
+            GUI.color = new Color(0.2f, 0.8f, 0.2f);
+            GUI.Label(new Rect(Screen.width/2 - 200, Screen.height/2 + 10, 400, 25), "✅ Perfect completion achieved");
+            
+            GUI.color = new Color(0.7f, 0.7f, 0.7f);
+            GUI.Label(new Rect(Screen.width/2 - 200, Screen.height/2 + 40, 400, 25), "Tap anywhere to continue");
+        }
     }
     
     // Public methods for integration with existing scripts
@@ -497,7 +491,6 @@ public class KaabaTest : MonoBehaviour
     // Fallback method to create a simple Kaaba without complex components
     void CreateSimpleKaaba()
     {
-        Debug.Log("Creating simple Kaaba fallback...");
         
         try
         {
@@ -551,12 +544,9 @@ public class KaabaTest : MonoBehaviour
             
             kaabaCreated = true;
             lastPosition = Camera.main.transform.position;
-            
-            Debug.Log("Simple Kaaba created successfully!");
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error creating simple Kaaba: {e.Message}");
             kaabaCreated = false;
         }
     }

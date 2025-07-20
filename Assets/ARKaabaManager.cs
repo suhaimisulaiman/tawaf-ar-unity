@@ -19,7 +19,7 @@ public class ARKaabaManager : MonoBehaviour
     void Start()
     {
         // Find AR components
-        planeManager = FindObjectOfType<ARPlaneManager>();
+        planeManager = FindFirstObjectByType<ARPlaneManager>();
         movementTracker = GetComponent<MovementTracker>();
         uiManager = GetComponent<UIManager>();
     }
@@ -47,7 +47,7 @@ public class ARKaabaManager : MonoBehaviour
     {
         // Raycast to find plane
         var hits = new List<ARRaycastHit>();
-        var raycastManager = FindObjectOfType<ARRaycastManager>();
+        var raycastManager = FindFirstObjectByType<ARRaycastManager>();
         
         if (raycastManager.Raycast(screenPosition, hits, TrackableType.PlaneWithinPolygon))
         {
