@@ -29,18 +29,12 @@ public class KaabaTest : MonoBehaviour
     public bool isValidDistance = false;
     
     [Header("Round Counting")]
-    public float hajarAswadThreshold = 5f; // Much smaller threshold (5° instead of 30°)
-    public float roundCompletionThreshold = 360f; // Require full 360° of movement for a round
-    public bool requireFullRotation = true; // Require full 360° rotation
-    public bool mustStartFromHajarAswad = true; // Rounds must start from Hajar al-Aswad
+    public float hajarAswadThreshold = 5f; // Threshold for detecting Hajar al-Aswad pass
     
     private Vector3 lastPosition;
     private float lastAngle = 0f;
     private bool hasPassedHajarAswad = false;
     private int hajarAswadPasses = 0;
-    private float roundStartAngle = 0f;
-    private float totalRotationThisRound = 0f;
-    private bool roundInProgress = false;
     
     void Start()
     {
@@ -281,11 +275,17 @@ public class KaabaTest : MonoBehaviour
                     // Check if passed Hajar al-Aswad (0 degrees)
         CheckHajarAswadPass();
         
-        // Check if completed a full round
-        CheckRoundCompletion();
-        
-        // Rounds must complete through exactly 360° of movement from Hajar al-Aswad
-        // No shortcuts or alternative completion methods
+        // Simple round counting: each Hajar al-Aswad pass = 1 round
+        if (hajarAswadPasses > 0 && !hasPassedHajarAswad)
+        {
+            // Complete round when we pass Hajar al-Aswad
+            Debug.Log($"Round completed! Hajar al-Aswad passes: {hajarAswadPasses}");
+            CompleteRound();
+            
+            // Reset for next round
+            hajarAswadPasses = 0;
+            hasPassedHajarAswad = false;
+        }
             
             lastAngle = currentAngle;
         }
@@ -338,67 +338,7 @@ public class KaabaTest : MonoBehaviour
         }
     }
     
-    void CheckRoundCompletion()
-    {
-        // Calculate current angle around Kaaba
-        Vector3 toKaaba = kaabaInstance.transform.position - Camera.main.transform.position;
-        Vector2 flatDirection = new Vector2(toKaaba.x, toKaaba.z);
-        float currentAngle = Mathf.Atan2(flatDirection.y, flatDirection.x) * Mathf.Rad2Deg;
-        
-        // Normalize angle to 0-360
-        if (currentAngle < 0) currentAngle += 360f;
-        
-        // Start tracking rotation ONLY when we first pass Hajar al-Aswad (0°)
-        if (hajarAswadPasses == 1 && !roundInProgress && mustStartFromHajarAswad)
-        {
-            // Verify we're actually near Hajar al-Aswad (0°) when starting
-            bool nearHajarAswad = Mathf.Abs(Mathf.DeltaAngle(currentAngle, 0f)) < hajarAswadThreshold;
-            if (nearHajarAswad)
-            {
-                roundInProgress = true;
-                roundStartAngle = currentAngle;
-                totalRotationThisRound = 0f;
-                Debug.Log($"Starting new round from Hajar al-Aswad at angle: {currentAngle:F1}°");
-            }
-            else
-            {
-                Debug.Log($"Cannot start round - not at Hajar al-Aswad. Current angle: {currentAngle:F1}°");
-            }
-        }
-        
-        // Track rotation during the round
-        if (roundInProgress)
-        {
-            float angleDifference = Mathf.DeltaAngle(lastAngle, currentAngle);
-            if (Mathf.Abs(angleDifference) > 1f) // Only count significant movements
-            {
-                totalRotationThisRound += Mathf.Abs(angleDifference);
-            }
-            
-            // Check if we've completed exactly 360° for a round
-            if (totalRotationThisRound >= roundCompletionThreshold)
-            {
-                Debug.Log($"Round completed! Total rotation: {totalRotationThisRound:F1}° (360° required)");
-                CompleteRound();
-                
-                // Reset for next round
-                roundInProgress = false;
-                hajarAswadPasses = 0;
-                hasPassedHajarAswad = false;
-                totalRotationThisRound = 0f;
-            }
-        }
-        
-        // Debug logging
-        if (Time.frameCount % 60 == 0 && roundInProgress)
-        {
-            Debug.Log($"Round Progress - Rotation: {totalRotationThisRound:F1}°/{roundCompletionThreshold}°, Angle: {currentAngle:F1}°");
-        }
-        else if (Time.frameCount % 60 == 0)
-        {
-            Debug.Log($"Round Status - In Progress: {roundInProgress}, Passes: {hajarAswadPasses}, Rotation: {totalRotationThisRound:F1}°");
-        }
-    }
+    // Removed complex CheckRoundCompletion method - using simple Hajar al-Aswad pass counting instead
     
     void CompleteRound()
     {
@@ -423,105 +363,114 @@ public class KaabaTest : MonoBehaviour
         }
     }
     
+    private float completionDisplayTime = 0f;
+    private bool showCompletion = false;
+    
     void OnGUI()
     {
         if (!showDebugUI) return;
         
-        // Simple, visible UI
-        GUI.color = Color.white;
-        GUI.skin.label.fontSize = 20;
+        // Clean, professional UI
+        GUI.skin.label.fontSize = 18;
         
-        int y = 50;
-        int lineHeight = 30;
+        int y = 20;
+        int lineHeight = 25;
         
-        GUI.Label(new Rect(20, y, 400, lineHeight), "KAABA TESTING MODE");
-        y += lineHeight;
-        
-        GUI.Label(new Rect(20, y, 400, lineHeight), $"Kaaba Created: {kaabaCreated}");
-        y += lineHeight;
+        // Main title
+        GUI.color = new Color(0.2f, 0.6f, 1f); // Blue
+        GUI.Label(new Rect(20, y, 400, lineHeight), "🕌 Tawaf AR Trainer");
+        y += lineHeight + 10;
         
         if (kaabaCreated)
         {
+            // Round counter - main focus
+            GUI.color = Color.white;
+            GUI.skin.label.fontSize = 24;
+            GUI.Label(new Rect(20, y, 400, lineHeight), $"Round {currentRound}/7");
+            y += lineHeight + 5;
+            
+            // Progress bar background
+            GUI.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+            GUI.Box(new Rect(20, y, 300, 15), "");
+            
+            // Progress bar fill
+            float progress = (float)currentRound / 7f;
+            GUI.color = new Color(0.2f, 0.8f, 0.2f, 0.9f); // Green
+            GUI.Box(new Rect(20, y, 300 * progress, 15), "");
+            
+            y += lineHeight + 10;
+            
+            // Status indicators
+            GUI.skin.label.fontSize = 16;
+            
+            // Distance indicator
+            GUI.color = isValidDistance ? new Color(0.2f, 0.8f, 0.2f) : new Color(0.8f, 0.2f, 0.2f);
             GUI.Label(new Rect(20, y, 400, lineHeight), $"Distance: {distanceToKaaba:F1}m");
             y += lineHeight;
             
-            // Color code the valid range status
-            GUI.color = isValidDistance ? Color.green : Color.red;
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Valid Range: {isValidDistance}");
-            y += lineHeight;
-            
-            // Show round progress with color
-            GUI.color = Color.white;
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Round: {currentRound}/7");
-            y += lineHeight;
-            
-            // Show Hajar al-Aswad passes
-            GUI.color = Color.cyan;
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Hajar al-Aswad Passes: {hajarAswadPasses}");
-            y += lineHeight;
-            
-            // Show round progress
-            if (roundInProgress)
+            // Current corner
+            if (enableCornerMarkers && cornerMarker != null && cornerMarker.IsNearCorner())
             {
-                GUI.color = Color.yellow;
-                GUI.Label(new Rect(20, y, 400, lineHeight), $"Round Progress: {totalRotationThisRound:F1}°/360°");
+                GUI.color = new Color(1f, 0.8f, 0.2f); // Gold
+                GUI.Label(new Rect(20, y, 400, lineHeight), $"📍 {cornerMarker.GetCurrentCornerName()}");
                 y += lineHeight;
             }
             
-            // Show round status debug info
-            GUI.color = Color.orange;
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Round In Progress: {roundInProgress}");
-            y += lineHeight;
-            
-            // Show if round started from Hajar al-Aswad
-            if (roundInProgress)
-            {
-                GUI.color = Color.green;
-                GUI.Label(new Rect(20, y, 400, lineHeight), "Round started from Hajar al-Aswad ✓");
-                y += lineHeight;
-            }
-            
-            // Show current angle
+            // Near Hajar al-Aswad indicator
             Vector3 toKaaba = kaabaInstance.transform.position - Camera.main.transform.position;
             Vector2 flatDirection = new Vector2(toKaaba.x, toKaaba.z);
             float currentAngle = Mathf.Atan2(flatDirection.y, flatDirection.x) * Mathf.Rad2Deg;
             if (currentAngle < 0) currentAngle += 360f;
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Current Angle: {currentAngle:F1}°");
-            y += lineHeight;
-            
-            // Show if near Hajar al-Aswad
             bool nearHajarAswad = Mathf.Abs(Mathf.DeltaAngle(currentAngle, 0f)) < hajarAswadThreshold;
-            GUI.color = nearHajarAswad ? Color.green : Color.white;
-            GUI.Label(new Rect(20, y, 400, lineHeight), $"Near Hajar al-Aswad: {nearHajarAswad} (Threshold: {hajarAswadThreshold}°)");
-            y += lineHeight;
             
-            // Show corner marker status
-            if (enableCornerMarkers && cornerMarker != null)
+            if (nearHajarAswad)
             {
-                GUI.color = cornerMarker.IsNearCorner() ? Color.green : Color.white;
-                GUI.Label(new Rect(20, y, 400, lineHeight), $"Corner Marker: {cornerMarker.GetCurrentCornerName()}");
+                GUI.color = new Color(0.8f, 0.2f, 0.2f); // Red for Hajar al-Aswad
+                GUI.Label(new Rect(20, y, 400, lineHeight), "🖤 Hajar al-Aswad");
                 y += lineHeight;
             }
         }
-        
-        if (!kaabaCreated)
-        {
-            GUI.Label(new Rect(20, y, 400, lineHeight), "Tap to create Kaaba");
-        }
         else
         {
-            GUI.Label(new Rect(20, y, 400, lineHeight), "System works automatically - just walk around!");
+            // Setup instructions
+            GUI.color = Color.white;
+            GUI.Label(new Rect(20, y, 400, lineHeight), "Tap to create Kaaba");
+            y += lineHeight;
+            
+            GUI.color = new Color(0.7f, 0.7f, 0.7f);
+            GUI.Label(new Rect(20, y, 400, lineHeight), "Point camera at floor, then tap screen");
         }
-        y += lineHeight;
         
-        GUI.Label(new Rect(20, y, 400, lineHeight), "Walk around the black cube!");
+        // Bottom instructions
+        y = Screen.height - 80;
+        GUI.color = new Color(0.6f, 0.6f, 0.6f, 0.8f);
+        GUI.skin.label.fontSize = 14;
+        GUI.Label(new Rect(20, y, 400, lineHeight), "Walk around the Kaaba in circles");
         y += lineHeight;
+        GUI.Label(new Rect(20, y, 400, lineHeight), "Keep 0.5-3m distance for best tracking");
         
-        // Instructions
-        GUI.color = Color.yellow;
-        GUI.Label(new Rect(20, y, 400, lineHeight), "Keep 0.5-3m distance from Kaaba");
-        y += lineHeight;
-        GUI.Label(new Rect(20, y, 400, lineHeight), "Walk in complete circles (small space mode)");
+        // Tawaf completion celebration
+        if (currentRound >= 7)
+        {
+            // Semi-transparent overlay
+            GUI.color = new Color(0, 0, 0, 0.7f);
+            GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "");
+            
+            // Celebration text
+            GUI.color = new Color(1f, 0.8f, 0.2f); // Gold
+            GUI.skin.label.fontSize = 32;
+            GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+            GUI.Label(new Rect(0, Screen.height/2 - 100, Screen.width, 50), "🎉 TAWAF COMPLETED! 🎉");
+            
+            GUI.color = Color.white;
+            GUI.skin.label.fontSize = 20;
+            GUI.Label(new Rect(0, Screen.height/2 - 50, Screen.width, 30), "All 7 rounds finished successfully");
+            
+            GUI.color = new Color(0.8f, 0.8f, 0.8f);
+            GUI.skin.label.fontSize = 16;
+            GUI.Label(new Rect(0, Screen.height/2, Screen.width, 25), "May Allah accept your Tawaf");
+        }
+    }
     }
     
     // Public methods for integration with existing scripts
