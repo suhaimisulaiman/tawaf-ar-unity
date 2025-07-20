@@ -50,7 +50,7 @@
 - **Marker Display Distance**: How close to corner (2° default)
 - **Marker Fade Time**: Animation duration (1s default)
 
-### **In KaabaTest Inspector:**
+### **In TawafController Inspector:**
 - **Enable Corner Markers**: Turn system on/off
 
 ## 📋 Corner Layout

@@ -51,7 +51,7 @@ An augmented reality (AR) application for training and practicing the Islamic ri
 ```
 TawafARTrainer/
 ├── Assets/
-│   ├── KaabaTest.cs              # Main Tawaf logic and round counting
+│   ├── TawafController.cs        # Main Tawaf logic and round counting
 │   ├── CornerMarker.cs           # Visual corner markers system
 │   ├── PrayerRecitation.cs       # Prayer playback and timing
 │   ├── PrayerUI.cs               # Prayer text display

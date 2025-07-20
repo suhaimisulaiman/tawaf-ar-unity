@@ -257,21 +257,31 @@ MonoBehaviour:
   m_GameObject: {fileID: 791333540}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5900bf656e40844d69ef1f7437aaea0c, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fa89499cace1444dbc5b1200163fb93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   enableTesting: 1
   showDebugUI: 1
   debugMode: 1
   enablePrayers: 1
+  enableCornerMarkers: 1
   kaabaInstance: {fileID: 0}
   kaabaCreated: 0
   distanceToKaaba: 0
   currentRound: 0
   totalAngleChange: 0
+  useRealisticKaaba: 0
+  kaabaBuilder: {fileID: 0}
+  kaabaScale: 0.1
   minimumDistance: 1
   maximumDistance: 8
   isValidDistance: 0
+  hajarAswadThreshold: 5
+  enableIstilam: 0
+  istilamGestureThreshold: 0.3
+  istilamTimeWindow: 2
+  istilamShakeThreshold: 0.1
+  requiredShakes: 3
 --- !u!1 &792689378
 GameObject:
   m_ObjectHideFlags: 0

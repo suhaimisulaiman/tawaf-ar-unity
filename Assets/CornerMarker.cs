@@ -9,7 +9,7 @@ public class CornerMarker : MonoBehaviour
     
     [Header("Corner Information")]
     public string[] cornerNames = { "Hajar al-Aswad", "Yemeni Corner", "Shami Corner", "Iraqi Corner" };
-    public float[] cornerAngles = { 0f, 90f, 180f, 270f };
+    public float[] cornerAngles = { 90f, 180f, 270f, 0f }; // Hajar al-Aswad at 90° (right side)
     public Color[] cornerColors = { Color.red, Color.green, Color.blue, Color.yellow };
     
     [Header("UI Elements")]
@@ -18,27 +18,27 @@ public class CornerMarker : MonoBehaviour
     public float markerAlpha = 0f;
     public float markerStartTime = 0f;
     
-    private KaabaTest kaabaTest;
+    private TawafController tawafController;
     private int currentCornerIndex = -1;
     private int lastCornerIndex = -1;
     
     void Start()
     {
-        FindKaabaTest();
+        FindTawafController();
     }
     
-    void FindKaabaTest()
+    void FindTawafController()
     {
-        kaabaTest = FindFirstObjectByType<KaabaTest>();
-        if (kaabaTest == null)
+        tawafController = FindFirstObjectByType<TawafController>();
+        if (tawafController == null)
         {
-            Debug.LogWarning("CornerMarker: KaabaTest not found!");
+            Debug.LogWarning("CornerMarker: TawafController not found!");
         }
     }
     
     void Update()
     {
-        if (!showCornerMarkers || kaabaTest == null || !kaabaTest.IsKaabaCreated())
+        if (!showCornerMarkers || tawafController == null || !tawafController.IsKaabaCreated())
             return;
         
         CheckCornerProximity();
@@ -48,7 +48,7 @@ public class CornerMarker : MonoBehaviour
     void CheckCornerProximity()
     {
         // Calculate current angle around Kaaba
-        Vector3 toKaaba = kaabaTest.GetKaaba().transform.position - Camera.main.transform.position;
+        Vector3 toKaaba = tawafController.GetKaaba().transform.position - Camera.main.transform.position;
         Vector2 flatDirection = new Vector2(toKaaba.x, toKaaba.z);
         float currentAngle = Mathf.Atan2(flatDirection.y, flatDirection.x) * Mathf.Rad2Deg;
         
@@ -168,10 +168,10 @@ public class CornerMarker : MonoBehaviour
     
     Vector3 GetCornerWorldPosition()
     {
-        if (kaabaTest == null || !kaabaTest.IsKaabaCreated()) return Vector3.zero;
+        if (tawafController == null || !tawafController.IsKaabaCreated()) return Vector3.zero;
         
         // Calculate corner position around Kaaba
-        Vector3 kaabaPosition = kaabaTest.GetKaaba().transform.position;
+        Vector3 kaabaPosition = tawafController.GetKaaba().transform.position;
         float cornerAngle = cornerAngles[currentCornerIndex] * Mathf.Deg2Rad;
         float distance = 1.5f; // Distance from Kaaba center
         

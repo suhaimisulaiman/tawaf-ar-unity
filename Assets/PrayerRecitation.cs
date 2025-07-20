@@ -14,22 +14,25 @@ public class PrayerRecitation : MonoBehaviour
     [Header("Prayer Timing")]
     public float prayerInterval = 30f; // Seconds between general prayers
     public float cornerThreshold = 90f; // Degrees to trigger corner prayer (more sensitive for testing)
+    public float prayerCooldown = 3f; // Minimum time between any prayers to prevent overlapping
     
     [Header("Prayer States")]
     public bool isPrayerPlaying = false;
     public int lastCorner = -1;
     public float lastPrayerTime = 0f;
     
-    private KaabaTest kaabaTest;
+    private TawafController tawafController;
     private PrayerUI prayerUI;
     private int currentCorner = 0;
-    private float[] cornerAngles = { 0f, 90f, 180f, 270f }; // Four corners
+    private float[] cornerAngles = { 90f, 180f, 270f, 0f }; // Four corners - Hajar al-Aswad at 90° (right side)
     private string[] cornerNames = { "Hajar al-Aswad", "Yemeni Corner", "Shami Corner", "Iraqi Corner" };
+    private string currentPrayerText = "";
+    private string currentPrayerType = "";
     
     void Start()
     {
         SetupAudio();
-        FindKaabaTest();
+        FindTawafController();
     }
     
     void SetupAudio()
@@ -43,12 +46,12 @@ public class PrayerRecitation : MonoBehaviour
         }
     }
     
-    void FindKaabaTest()
+    void FindTawafController()
     {
-        kaabaTest = FindFirstObjectByType<KaabaTest>();
-        if (kaabaTest == null)
+        tawafController = FindFirstObjectByType<TawafController>();
+        if (tawafController == null)
         {
-            Debug.LogWarning("PrayerRecitation: KaabaTest not found!");
+            Debug.LogWarning("PrayerRecitation: TawafController not found!");
         }
         
         // Find PrayerUI
@@ -63,7 +66,7 @@ public class PrayerRecitation : MonoBehaviour
     
     void Update()
     {
-        if (!enablePrayers || kaabaTest == null) return;
+        if (!enablePrayers || tawafController == null) return;
         
         // Check for corner prayers
         if (playCornerPrayers)
@@ -80,13 +83,13 @@ public class PrayerRecitation : MonoBehaviour
     
     void CheckCornerPrayers()
     {
-        if (kaabaTest == null)
+        if (tawafController == null)
         {
-            Debug.LogWarning("PrayerRecitation: KaabaTest is null!");
+            Debug.LogWarning("PrayerRecitation: TawafController is null!");
             return;
         }
         
-        if (!kaabaTest.IsKaabaCreated())
+        if (!tawafController.IsKaabaCreated())
         {
             Debug.Log("PrayerRecitation: Kaaba not created yet...");
             return;
@@ -100,7 +103,7 @@ public class PrayerRecitation : MonoBehaviour
         // }
         
         // Calculate current angle around Kaaba
-        Vector3 toKaaba = kaabaTest.GetKaaba().transform.position - Camera.main.transform.position;
+        Vector3 toKaaba = tawafController.GetKaaba().transform.position - Camera.main.transform.position;
         Vector2 flatDirection = new Vector2(toKaaba.x, toKaaba.z);
         float currentAngle = Mathf.Atan2(flatDirection.y, flatDirection.x) * Mathf.Rad2Deg;
         
@@ -154,7 +157,12 @@ public class PrayerRecitation : MonoBehaviour
     
     void PlayCornerPrayer(int cornerIndex)
     {
-        if (isPrayerPlaying) return;
+        // Check if prayer is already playing or in cooldown
+        if (isPrayerPlaying || Time.time - lastPrayerTime < prayerCooldown) 
+        {
+            Debug.Log($"Prayer blocked - Playing: {isPrayerPlaying}, Cooldown: {Time.time - lastPrayerTime:F1}s");
+            return;
+        }
         
         string cornerName = cornerNames[cornerIndex];
         string prayerText = GetCornerPrayer(cornerIndex);
@@ -171,7 +179,11 @@ public class PrayerRecitation : MonoBehaviour
     
     void PlayGeneralPrayer()
     {
-        if (isPrayerPlaying) return;
+        // Check if prayer is already playing or in cooldown
+        if (isPrayerPlaying || Time.time - lastPrayerTime < prayerCooldown) 
+        {
+            return;
+        }
         
         string prayerText = GetGeneralPrayer();
         
@@ -188,25 +200,32 @@ public class PrayerRecitation : MonoBehaviour
         switch (cornerIndex)
         {
             case 0: // Hajar al-Aswad (Black Stone)
-                return "Bismillahi Allahu Akbar";
+                return "بِسْمِ اللَّهِ اللَّهُ أَكْبَر\nBismillahi Allahu Akbar\nIn the name of Allah, Allah is the Greatest";
             case 1: // Yemeni Corner
-                return "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar";
+                return "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ\nRabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar\nOur Lord, grant us good in this world and good in the Hereafter and protect us from the punishment of the Fire";
             case 2: // Shami Corner
-                return "Allahumma inni as'aluka al-jannah wa a'udhu bika minan-nar";
+                return "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْجَنَّةَ وَأَعُوذُ بِكَ مِنَ النَّارِ\nAllahumma inni as'aluka al-jannah wa a'udhu bika minan-nar\nO Allah, I ask You for Paradise and I seek refuge with You from the Fire";
             case 3: // Iraqi Corner
-                return "Allahumma inni as'aluka al-'afwa wal-'afiyah fid-dunya wal-akhirati";
+                return "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ\nAllahumma inni as'aluka al-'afwa wal-'afiyah fid-dunya wal-akhirati\nO Allah, I ask You for forgiveness and well-being in this world and the Hereafter";
             default:
-                return "Subhan Allah";
+                return "سُبْحَانَ اللَّهِ\nSubhan Allah\nGlory be to Allah";
         }
     }
     
     string GetGeneralPrayer()
     {
         string[] generalPrayers = {
-            "Subhan Allah wal-hamdu lillahi wa la ilaha illa Allahu wa Allahu Akbar",
-            "Allahumma salli 'ala Muhammadin wa 'ala ali Muhammad",
-            "Rabbana taqabbal minna innaka antas-Sami'ul-'Alim",
-            "Allahumma inni as'aluka ridaka wal-jannah wa a'udhu bika min sakhatika wan-nar"
+            "سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَر\nSubhan Allah wal-hamdu lillahi wa la ilaha illa Allahu wa Allahu Akbar\nGlory be to Allah, and praise be to Allah, and there is no god but Allah, and Allah is the Greatest",
+            
+            "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ\nAllahumma salli 'ala Muhammadin wa 'ala ali Muhammad\nO Allah, send prayers upon Muhammad and the family of Muhammad",
+            
+            "رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنْتَ السَّمِيعُ الْعَلِيمُ\nRabbana taqabbal minna innaka antas-Sami'ul-'Alim\nOur Lord, accept this from us, for You are the All-Hearing, the All-Knowing",
+            
+            "اللَّهُمَّ إِنِّي أَسْأَلُكَ رِضَاكَ وَالْجَنَّةَ وَأَعُوذُ بِكَ مِنْ سَخَطِكَ وَالنَّارِ\nAllahumma inni as'aluka ridaka wal-jannah wa a'udhu bika min sakhatika wan-nar\nO Allah, I ask You for Your pleasure and Paradise, and I seek refuge with You from Your wrath and the Fire",
+            
+            "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ\nLa ilaha illa Allahu wahdahu la shareeka lahu, lahul-mulku wa lahul-hamdu wa huwa 'ala kulli shay'in qadeer\nThere is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things",
+            
+            "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ\nSubhan Allahi wa bihamdihi, subhan Allahil-'adheem\nGlory be to Allah and His is the praise, glory be to Allah the Most Great"
         };
         
         return generalPrayers[Random.Range(0, generalPrayers.Length)];
@@ -214,11 +233,15 @@ public class PrayerRecitation : MonoBehaviour
     
     void DisplayPrayerText(string prayerText, string prayerType)
     {
-        // Display prayer text on screen
-        if (prayerUI != null)
-        {
-            prayerUI.DisplayPrayer(prayerText, prayerType);
-        }
+        // Store current prayer for display
+        currentPrayerText = prayerText;
+        currentPrayerType = prayerType;
+        
+        // Don't call PrayerUI to avoid double display
+        // if (prayerUI != null)
+        // {
+        //     prayerUI.DisplayPrayer(prayerText, prayerType);
+        // }
         
         Debug.Log($"[{prayerType}] {prayerText}");
     }
@@ -233,23 +256,63 @@ public class PrayerRecitation : MonoBehaviour
     // Public methods for integration
     public void PlayRoundCompletionPrayer(int roundNumber)
     {
-        if (isPrayerPlaying) return;
+        // Check if prayer is already playing or in cooldown
+        if (isPrayerPlaying || Time.time - lastPrayerTime < prayerCooldown) 
+        {
+            return;
+        }
         
-        string prayerText = $"Round {roundNumber} completed. Alhamdulillah!";
+        string prayerText = $"الْحَمْدُ لِلَّهِ\nAlhamdulillah!\nRound {roundNumber} completed. Praise be to Allah!";
         Debug.Log($"Round completion prayer: {prayerText}");
         
         DisplayPrayerText(prayerText, "Round Completion");
-        StartCoroutine(PrayerDuration(2f));
+        StartCoroutine(PrayerDuration(3f));
     }
     
     public void PlayTawafCompletionPrayer()
     {
-        if (isPrayerPlaying) return;
+        // Check if prayer is already playing or in cooldown
+        if (isPrayerPlaying || Time.time - lastPrayerTime < prayerCooldown) 
+        {
+            return;
+        }
         
-        string prayerText = "Tawaf completed! Allahu Akbar! May Allah accept your Tawaf.";
+        string prayerText = "اللَّهُ أَكْبَرُ\nAllahu Akbar!\nTawaf completed! May Allah accept your Tawaf and grant you His mercy.";
         Debug.Log($"Tawaf completion prayer: {prayerText}");
         
         DisplayPrayerText(prayerText, "Tawaf Completion");
+        StartCoroutine(PrayerDuration(5f));
+    }
+    
+    // Istilam prayer when touching/kissing Hajar al-Aswad
+    public void PlayIstilamPrayer()
+    {
+        // Check if prayer is already playing or in cooldown
+        if (isPrayerPlaying || Time.time - lastPrayerTime < prayerCooldown) 
+        {
+            return;
+        }
+        
+        string prayerText = "بِسْمِ اللَّهِ وَاللَّهُ أَكْبَرُ\nBismillahi wa Allahu Akbar\nIn the name of Allah, and Allah is the Greatest";
+        Debug.Log($"Istilam prayer: {prayerText}");
+        
+        DisplayPrayerText(prayerText, "Istilam");
+        StartCoroutine(PrayerDuration(2f));
+    }
+    
+    // Additional Tawaf prayers
+    public void PlayTawafStartPrayer()
+    {
+        // Check if prayer is already playing or in cooldown
+        if (isPrayerPlaying || Time.time - lastPrayerTime < prayerCooldown) 
+        {
+            return;
+        }
+        
+        string prayerText = "اللَّهُمَّ إِنِّي أُرِيدُ الطَّوَافَ بِبَيْتِكَ الْحَرَامِ فَيَسِّرْهُ لِي وَتَقَبَّلْهُ مِنِّي\nAllahumma inni ureedu tawafa bi baytikal-haram, fayassirhu lee wa taqabbalhu minnee\nO Allah, I intend to perform Tawaf around Your Sacred House, so make it easy for me and accept it from me";
+        Debug.Log($"Tawaf start prayer: {prayerText}");
+        
+        DisplayPrayerText(prayerText, "Tawaf Start");
         StartCoroutine(PrayerDuration(4f));
     }
     
@@ -257,27 +320,105 @@ public class PrayerRecitation : MonoBehaviour
     {
         if (!enablePrayers) return;
         
-        // Show prayer status
+        // Enhanced prayer display with better formatting and no fixed height
+        if (isPrayerPlaying)
+        {
+            // Prayer overlay with larger, more readable text
+            GUI.color = new Color(0, 0, 0, 0.85f);
+            GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "");
+            
+            // Calculate dynamic height based on text content
+            string[] lines = currentPrayerText.Split('\n');
+            int lineCount = lines.Length;
+            int dynamicHeight = Mathf.Max(400, lineCount * 35 + 100); // Minimum 400px, 35px per line + padding
+            
+            // Prayer card background with dynamic height
+            GUI.color = new Color(0.1f, 0.1f, 0.1f, 0.98f);
+            GUI.Box(new Rect(Screen.width/2 - 350, Screen.height/2 - dynamicHeight/2, 700, dynamicHeight), "");
+            
+            // Inner card with border
+            GUI.color = new Color(0.15f, 0.15f, 0.15f, 0.95f);
+            GUI.Box(new Rect(Screen.width/2 - 340, Screen.height/2 - dynamicHeight/2 + 10, 680, dynamicHeight - 20), "");
+            
+            // Prayer title with corner name
+            GUI.color = new Color(1f, 0.8f, 0.2f); // Gold color for title
+            GUI.skin.label.fontSize = 28;
+            GUI.skin.label.fontStyle = FontStyle.Bold;
+            GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+            GUI.Label(new Rect(Screen.width/2 - 340, Screen.height/2 - dynamicHeight/2 + 20, 680, 40), $"🕌 {currentPrayerType}");
+            
+            // Prayer text with better formatting
+            GUI.color = Color.white;
+            GUI.skin.label.fontSize = 22;
+            GUI.skin.label.fontStyle = FontStyle.Normal;
+            GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+            
+            // Split prayer text into sections for better formatting
+            string[] sections = currentPrayerText.Split('\n');
+            int yOffset = 80;
+            int lineHeight = 35;
+            
+            foreach (string section in sections)
+            {
+                if (!string.IsNullOrEmpty(section.Trim()))
+                {
+                    // Arabic text (usually first line) - larger and centered
+                    if (section.Contains("ال") || section.Contains("بِسْمِ") || section.Contains("سُبْحَانَ") || 
+                        section.Contains("اللَّهُمَّ") || section.Contains("رَبَّنَا") || section.Contains("لَا إِلَهَ"))
+                    {
+                        GUI.color = new Color(0.2f, 0.8f, 1f); // Light blue for Arabic
+                        GUI.skin.label.fontSize = 26;
+                        GUI.Label(new Rect(Screen.width/2 - 340, Screen.height/2 - dynamicHeight/2 + yOffset, 680, lineHeight), section);
+                        yOffset += lineHeight + 10;
+                    }
+                    // Transliteration - medium size
+                    else if (section.Contains("Allah") || section.Contains("Bismillah") || section.Contains("Subhan") ||
+                             section.Contains("Rabbana") || section.Contains("Allahumma") || section.Contains("La ilaha"))
+                    {
+                        GUI.color = new Color(0.9f, 0.9f, 0.9f); // Light gray for transliteration
+                        GUI.skin.label.fontSize = 20;
+                        GUI.Label(new Rect(Screen.width/2 - 340, Screen.height/2 - dynamicHeight/2 + yOffset, 680, lineHeight), section);
+                        yOffset += lineHeight + 5;
+                    }
+                    // English translation - smaller size
+                    else
+                    {
+                        GUI.color = new Color(0.7f, 0.7f, 0.7f); // Gray for translation
+                        GUI.skin.label.fontSize = 18;
+                        GUI.Label(new Rect(Screen.width/2 - 340, Screen.height/2 - dynamicHeight/2 + yOffset, 680, lineHeight), section);
+                        yOffset += lineHeight + 5;
+                    }
+                }
+            }
+            
+            // Reset font settings
+            GUI.skin.label.fontSize = 12;
+            GUI.skin.label.fontStyle = FontStyle.Normal;
+            GUI.skin.label.alignment = TextAnchor.UpperLeft;
+        }
+        
+        // Show prayer status (smaller and less intrusive)
         GUI.color = isPrayerPlaying ? Color.green : Color.white;
-        GUI.Label(new Rect(20, Screen.height - 100, 400, 30), $"Prayer Status: {(isPrayerPlaying ? "Playing" : "Ready")}");
+        GUI.skin.label.fontSize = 14;
+        GUI.Label(new Rect(20, Screen.height - 80, 300, 25), $"Prayer: {(isPrayerPlaying ? currentPrayerType : "Ready")}");
         
         if (lastCorner >= 0)
         {
             GUI.color = Color.yellow;
-            GUI.Label(new Rect(20, Screen.height - 70, 400, 30), $"Last Corner: {cornerNames[lastCorner]}");
+            GUI.Label(new Rect(20, Screen.height - 55, 300, 25), $"Last: {cornerNames[lastCorner]}");
         }
         
         // Show current corner detection
-        if (kaabaTest != null && kaabaTest.IsKaabaCreated())
+        if (tawafController != null && tawafController.IsKaabaCreated())
         {
-            Vector3 toKaaba = kaabaTest.GetKaaba().transform.position - Camera.main.transform.position;
+            Vector3 toKaaba = tawafController.GetKaaba().transform.position - Camera.main.transform.position;
             Vector2 flatDirection = new Vector2(toKaaba.x, toKaaba.z);
             float currentAngle = Mathf.Atan2(flatDirection.y, flatDirection.x) * Mathf.Rad2Deg;
             if (currentAngle < 0) currentAngle += 360f;
             
             int nearestCorner = GetNearestCorner(currentAngle);
             GUI.color = Color.cyan;
-            GUI.Label(new Rect(20, Screen.height - 40, 400, 30), $"Current Corner: {cornerNames[nearestCorner]} ({currentAngle:F1}°)");
+            GUI.Label(new Rect(20, Screen.height - 30, 300, 25), $"Near: {cornerNames[nearestCorner]} ({currentAngle:F1}°)");
         }
     }
 } 

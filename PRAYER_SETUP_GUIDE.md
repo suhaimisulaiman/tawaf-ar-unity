@@ -12,8 +12,8 @@
 ## 📱 How to Test
 
 ### **Step 1: Setup**
-1. **Add KaabaTest component** to your scene (if not already added)
-2. **Enable prayers** in KaabaTest inspector
+1. **Add TawafController component** to your scene (if not already added)
+2. **Enable prayers** in TawafController inspector
 3. **Build and test** on iPhone
 
 ### **Step 2: Test Corner Prayers**
@@ -50,7 +50,7 @@
 
 ## 🔧 Configuration Options
 
-### **In KaabaTest Inspector:**
+### **In TawafController Inspector:**
 - **Enable Prayers**: Turn prayer system on/off
 - **Debug Mode**: Easier round completion for testing
 
