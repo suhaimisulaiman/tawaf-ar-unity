@@ -8,7 +8,6 @@ public class TawafController : MonoBehaviour
     public bool enableTesting = true;
     public bool showDebugUI = true;
     public bool debugMode = false; // Clean experience
-    public bool simpleTestMode = true; // Simple test mode for debugging
     
     [Header("Prayer Integration")]
     public bool enablePrayers = true;
@@ -220,34 +219,7 @@ public class TawafController : MonoBehaviour
             TrackMovement();
         }
         
-        // Simple test mode - simulate rotation with keyboard
-        if (simpleTestMode && roundInProgress)
-        {
-            // Use arrow keys to simulate rotation
-            if (Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                totalRotationThisRound += 45f; // Simulate 45° rotation
-                Debug.Log($"🔧 Simple test - Rotation: {totalRotationThisRound:F1}°/360°");
-                
-                if (totalRotationThisRound >= 355f)
-                {
-                    Debug.Log($"🎯 Simple test - Round completed!");
-                    CompleteRound();
-                    roundInProgress = false;
-                    totalRotationThisRound = 0f;
-                }
-            }
-        }
-        
-        // Ultra simple test - just increment round with spacebar
-        if (simpleTestMode && Input.GetKeyDown(KeyCode.Space))
-        {
-            Debug.Log($"🔧 ULTRA SIMPLE TEST - Incrementing round from {currentRound} to {currentRound + 1}");
-            currentRound++;
-            Debug.Log($"🔧 ULTRA SIMPLE TEST - Round is now: {currentRound}");
-        }
-        
-        // Arrow test removed
+        // Test mode controls removed
         
         // Manual Kaaba creation with touch (only for initial setup)
         if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
@@ -287,16 +259,7 @@ public class TawafController : MonoBehaviour
                 Debug.Log($"🔧 Round tracking reset - ready to start new round");
             }
             
-            // Single tap to start round (for simple test mode)
-            if (simpleTestMode && Input.GetTouch(0).tapCount == 1)
-            {
-                Debug.Log($"🔧 Simple test mode - Starting round manually");
-                roundInProgress = true;
-                roundStartAngle = 0f;
-                totalRotationThisRound = 0f;
-                roundStartTime = Time.time;
-                hasPassedHajarAswad = true;
-            }
+            // Test mode controls removed
         }
         
 
@@ -648,19 +611,7 @@ public class TawafController : MonoBehaviour
             GUI.color = Color.white;
             GUI.Label(new Rect(padding, y, 350, 50), $"Round {currentRound}/7");
             
-            // Simple test display
-            if (simpleTestMode)
-            {
-                GUI.color = Color.yellow;
-                GUI.skin.label.fontSize = 16;
-                GUI.Label(new Rect(padding, y + 60, 350, 30), $"TEST: Press SPACE to increment, RIGHT ARROW for rotation");
-                GUI.Label(new Rect(padding, y + 90, 350, 30), $"Hajar Aswad Passes: {hajarAswadPasses}, Round Active: {roundInProgress}");
-                y += 120;
-            }
-            else
-            {
-                y += 60;
-            }
+            y += 60;
             
             // Enhanced progress bar with animation
             GUI.skin.label.fontSize = 16;
